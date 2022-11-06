@@ -8,12 +8,18 @@ from pygame.surfarray import array3d
 import math
 import numpy as np
 import cv2
+import random
 
 class ParkingENV(gym.Env):
     def __init__(self):
+        super().__init__()
         pygame.init()
-        super(ParkingENV,self).__init__()
         self.fps = 1000
+        self.spec = None
+        self.metadata = {
+            'render.modes': ['human','rgb_array'],
+            'video.frames_per_second': self.fps
+        } 
         self.clock = time.Clock()
         self.width = 500
         self.height = 500
@@ -53,11 +59,11 @@ class ParkingENV(gym.Env):
         self.clock.tick(self.fps)
         pygame.display.update()
         angle = self.agent.driving_angle % 360
-        info = {'position': (self.agent.rect.x,self.agent.rect.y), 'angle': (angle)}
-        reward = self.distance(self.poshistory[-1][0],self.poshistory[-1][1],200,100) - self.distance(self.agent.rect.x,self.agent.rect.y,200,100)
-        if self.agent.rect.x == 200 and self.agent.rect.y == 100:
+        info = {'position': (self.agent.rect.x,self.agent.rect.y), 'goal': (self.goalx,self.goaly)}
+        reward = self.distance(self.poshistory[-1][0],self.poshistory[-1][1],self.goalx,self.goaly) - self.distance(self.agent.rect.x,self.agent.rect.y,self.goalx,self.goaly)
+        if self.agent.rect.x == self.goalx and self.agent.rect.y == self.goaly:
             reward = 100
-            self.reset()
+            parked = True
         self.poshistory.append((self.agent.rect.x,self.agent.rect.y))
         if self.totalframes > 600:
             reward = -10
@@ -69,9 +75,11 @@ class ParkingENV(gym.Env):
     def reset(self):
         self.totalframes = 0
         self.history = []
+        self.goalx = random.randrange(100,400)
+        self.goaly = random.randrange(100,300)
         self.screen.fill((90,123,0))
         self.agent = Car()
-        self.spot = pygame.Rect(200,100,32,64)
+        self.spot = pygame.Rect(self.goalx,self.goaly,32,64)
         self.history = []
         self.poshistory = [(-999,-999)]
         for i in range(0, 6):
@@ -83,7 +91,9 @@ class ParkingENV(gym.Env):
         display.update()
         
     def close(self):
-        pass
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()
 
     def pre_processing(self, image):
         image = cv2.cvtColor(cv2.resize(image, (84, 84)), cv2.COLOR_BGR2GRAY)
