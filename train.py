@@ -4,6 +4,7 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.results_plotter import load_results, ts2xy
 import numpy as np
 import os
+from env import ParkingENV
 
 class LogCallback(BaseCallback):
     def __init__(self, check_freq, save_path, verbose=1):
